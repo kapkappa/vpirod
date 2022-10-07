@@ -9,11 +9,11 @@ channel = connection.channel()
 
 channel.queue_declare(queue='client-manager', durable=True)
 
-message = ' '.join(sys.argv[1:])
+letter = input()
 
-channel.basic_publish(exchange='', routing_key='client-manager', body=message, properties=pika.BasicProperties(delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE))
+channel.basic_publish(exchange='', routing_key='client-manager', body=letter)
 
-print("CLIENT: message sent")
+print("CLIENT: message sent to MANAGER")
 
 
 
@@ -22,8 +22,8 @@ print("CLIENT: message sent")
 #channel.queue_declare(queue='manager-client', durable=True)
 
 def callback(ch, method, properties, body):
-    print("CLIENT: message recieved")
-    print(body)
+    print("CLIENT: message recieved from MANAGER")
+    print(body.decode("utf-8"))
 
 channel.basic_consume(queue='client-manager', on_message_callback=callback)
 channel.start_consuming()

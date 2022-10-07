@@ -16,7 +16,9 @@ channel = connection.channel()
 channel.queue_declare(queue='client-manager', durable=True)
 
 def callback_client(ch, method, properties, body):
-    letter = body
+    print("MANAGER: message received from CLIENT")
+    print(body.decode("utf-8"))
+    letter = body.decode("utf-8")
     step2(letter.lower())
 
 
@@ -24,7 +26,7 @@ def callback_client(ch, method, properties, body):
 
 def step2(letter):
     def get_number(letter):
-        if (letter.isalpha() == false):
+        if (letter.isalpha() == False):
             return -1
         return dict[letter]
 
@@ -38,16 +40,17 @@ def step2(letter):
 
 
 #STEP 3: receive message from selected process
-
     channel.queue_declare(queue='processes-manager', durable=True)
 
     def callback_process(ch, method, properties, body):
-        step3(body)
+        print("MANAGER: message received from {} process".format(proc_number))
+        step3(body.decode("utf-8"))
 
 
 #STEP 4: send message back to client
 
     def step3(streets):
+        print("MANAGER: message sent to CLIENT")
         channel.basic_publish(exchange='', routing_key='client-manager', body=streets)
 
     channel.basic_consume(queue='processes-manager', on_message_callback=callback_client, auto_ack=True)
