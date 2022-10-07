@@ -11,14 +11,14 @@ dict = {l: (i % number_of_processes) for i, l in enumerate("abcdefghijklmnopqrst
 
 #STEP 1: receive message from client
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-channel = connection.channel()
-channel.queue_declare(queue='client-manager', durable=True)
+client_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+client_channel = client_connection.channel()
+client_channel.queue_declare(queue='client-manager')
 
-def callback_client(ch, method, properties, body):
+def callback_client(ch, method, properties, _body):
     print("MANAGER: message received from CLIENT")
-    print(body.decode("utf-8"))
-    letter = body.decode("utf-8")
+    print(_body.decode("utf-8"))
+    letter = _body.decode("utf-8")
     step2(letter.lower())
 
 
@@ -30,33 +30,42 @@ def step2(letter):
             return -1
         return dict[letter]
 
-    channel.exchange_declare(exchange='processes', exchange_type='direct')
+    exchange_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    exchange_channel = exchange_connection.channel()
+    exchange_channel.exchange_declare(exchange='processes', exchange_type='direct')
 
     proc_number = get_number(letter)
-    print("MANAGER: sending message to {} process!".format(proc_number))
-
-    channel.basic_publish(exchange='processes', routing_key=str(proc_number), body=letter)
+    print("MANAGER: sending message to {} PROCESS".format(proc_number))
+    exchange_channel.basic_publish(exchange='processes', routing_key=str(proc_number), body=letter)
 
 
 
 #STEP 3: receive message from selected process
-    channel.queue_declare(queue='processes-manager', durable=True)
+    process_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    process_channel = process_connection.channel()
+    process_channel.queue_declare(queue='processes-manager')
 
-    def callback_process(ch, method, properties, body):
-        print("MANAGER: message received from {} process".format(proc_number))
-        step3(body.decode("utf-8"))
+    def callback_process(ch, method, properties, __body):
+        print("MANAGER: message received from any process")
+        print(__body.decode("utf-8"))
+        step3(__body.decode("utf-8"))
 
 
 #STEP 4: send message back to client
-
-    def step3(streets):
+    def step3(street):
         print("MANAGER: message sent to CLIENT")
-        channel.basic_publish(exchange='', routing_key='client-manager', body=streets)
-
-    channel.basic_consume(queue='processes-manager', on_message_callback=callback_client, auto_ack=True)
-    channel.start_consuming()
+        print(street)
+        client_channel.basic_publish(exchange='', routing_key='client-manager', body=street)
 
 
+    process_channel.basic_consume(queue='processes-manager', on_message_callback=callback_process, auto_ack=True)
+    process_channel.start_consuming()
 
-channel.basic_consume(queue='client-manager', on_message_callback=callback_client, auto_ack=True)
-channel.start_consuming()
+
+
+client_channel.basic_consume(queue='client-manager', on_message_callback=callback_client, auto_ack=True)
+client_channel.start_consuming()
+
+print("MANAGER: stopped consuming")
+client_connection.close()
+print("MANAGER: connection closed")

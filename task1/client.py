@@ -6,8 +6,7 @@ import pika, sys
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
-
-channel.queue_declare(queue='client-manager', durable=True)
+channel.queue_declare(queue='client-manager')
 
 letter = input()
 
@@ -19,13 +18,14 @@ print("CLIENT: message sent to MANAGER")
 
 #STEP 2: receive a message from the manager
 
-#channel.queue_declare(queue='manager-client', durable=True)
-
-def callback(ch, method, properties, body):
+def callback(ch, method, properties, _body):
     print("CLIENT: message recieved from MANAGER")
-    print(body.decode("utf-8"))
+    print(_body.decode("utf-8"))
+
 
 channel.basic_consume(queue='client-manager', on_message_callback=callback)
 channel.start_consuming()
 
+print("CLIENT: consuming stopped")
 connection.close()
+print("CLIENT: connection closed")
