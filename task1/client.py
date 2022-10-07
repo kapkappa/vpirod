@@ -15,15 +15,17 @@ channel.basic_publish(exchange='', routing_key='client-manager', body=message, p
 
 print("CLIENT: message sent")
 
+
+
 #STEP 2: receive a message from the manager
 
-channel.queue_declare(queue='manager-client', durable=True)
+#channel.queue_declare(queue='manager-client', durable=True)
 
 def callback(ch, method, properties, body):
     print("CLIENT: message recieved")
     print(body)
 
-channel.basic_consume(queue='manager-client', on_message_callback=callback)
+channel.basic_consume(queue='client-manager', on_message_callback=callback)
 channel.start_consuming()
 
 connection.close()
