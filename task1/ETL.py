@@ -2,7 +2,16 @@
 
 import subprocess
 
-#subprocess.run("/home/gravitage/prog/github/vpirod/task1/osm_handler.sh")
-message = subprocess.run("/home/gravitage/prog/github/vpirod/task1/osm_handler.sh", capture_output=True, text=True)
+#STEP 1: get data from osm-file
 
-print(message)
+message = subprocess.run('./osm_handler.sh', capture_output=True, text=True)
+
+streets = message.stdout
+streets = streets.split('\n')
+
+streets=list(set(streets))
+print(streets)
+
+#STEP 2: send data to processes
+...
+

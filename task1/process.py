@@ -2,6 +2,10 @@
 
 import pika, sys
 
+#STEP 0: receive data from ETL process
+
+
+
 #step 1: receive message
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
