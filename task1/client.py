@@ -13,10 +13,13 @@ channel.queue_declare(queue='manager-client')
 while(True):
     print("CLIENT: new iteration")
 
-    letter = input()
+    try:
+        letter = input()
+    except EOFError as e:
+        break
 
-    if (letter.isalpha() == False):
-        print("Wrong input: enter a letter")
+    if (letter.isalpha() == False or len(letter) > 1):
+        print("Wrong input: enter a single letter")
         continue
 
     channel.basic_publish(exchange='', routing_key='client-manager', body=letter.lower())
@@ -40,7 +43,8 @@ while(True):
     print(requested_streets)
 
 
+channel.basic_publish(exchange='', routing_key='client-manager', body="__quit__")
 
-print("CLIENT: consuming stopped")
+print("CLIENT: consuming from manager stopped")
 connection.close()
-print("CLIENT: connection closed")
+print("CLIENT: connection with manager closed")

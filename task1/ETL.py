@@ -4,13 +4,18 @@ import subprocess, pika, sys
 
 #STEP 1: get data from osm-file
 
+def check(street):
+    if (street == ""):
+        return False
+    return street[0].isalpha()
+
 message = subprocess.run("cat map.osm | grep \'addr:street\' | cut -d \'\"\' -f4", capture_output=True, text=True, shell=True)
 
 streets = message.stdout
 streets = streets.split('\n')
 
 streets=list(set(streets))
-streets = list(filter(None, streets))
+streets = list(filter(check, streets))
 
 print(streets)
 
