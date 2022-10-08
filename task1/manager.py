@@ -18,22 +18,17 @@ client_channel.queue_declare(queue='client-manager')
 def callback_client(ch, method, properties, _body):
     print("MANAGER: message {} received from CLIENT".format(_body.decode("utf-8")))
     letter = _body.decode("utf-8")
-    step2(letter.lower())
+    step2(letter)
 
 
 #STEP 2: send message to selected process
 
 def step2(letter):
-    def get_number(letter):
-        if (letter.isalpha() == False):
-            return -1
-        return dict[letter]
-
     exchange_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
     exchange_channel = exchange_connection.channel()
     exchange_channel.exchange_declare(exchange='processes', exchange_type='direct')
 
-    proc_number = get_number(letter)
+    proc_number = dict[letter]
     print("MANAGER: sending message to {} PROCESS".format(proc_number))
     exchange_channel.basic_publish(exchange='processes', routing_key=str(proc_number), body=letter)
 
@@ -45,14 +40,16 @@ def step2(letter):
     process_channel.queue_declare(queue='processes-manager')
 
     def callback_process(ch, method, properties, __body):
-        print("MANAGER: message {} received from any process".format(__body.decode("utf-8")))
+#        print("MANAGER: message {} received from any process".format(__body.decode("utf-8")))
         step3(__body.decode("utf-8"))
 
 
 #STEP 4: send message back to client
     def step3(street):
-        print("MANAGER: message {} sent to CLIENT".format(street))
+#        print("MANAGER: message {} sent to CLIENT".format(street))
         client_channel.basic_publish(exchange='', routing_key='manager-client', body=street)
+        if (street == "__quit__"):
+            process_channel.stop_consuming()
 
 
     process_channel.basic_consume(queue='processes-manager', on_message_callback=callback_process, auto_ack=True)
