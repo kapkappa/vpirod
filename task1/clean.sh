@@ -6,4 +6,4 @@ for queue in $list; do
     sudo rabbitmqctl delete_queue $queue
 done
 
-sudo rabbitmqctl close_all_connections
+sudo rabbitmqctl close_all_connections cleaning

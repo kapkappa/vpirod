@@ -31,10 +31,11 @@ def callback_client(ch, method, properties, _body):
     print("MANAGER: message {} received from CLIENT".format(_body.decode("utf-8")))
     letter = _body.decode("utf-8")
 
-    if (letter == "__quit__"):
+    if (letter == "__end__"):
         client_channel.stop_consuming()
         for i in range(number_of_processes):
             exchange_channel.basic_publish(exchange='processes', routing_key=str(i), body=letter)
+        return
     else:
         proc_number = dict[letter]
         print("MANAGER: sending message to {} PROCESS".format(proc_number))

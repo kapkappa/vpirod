@@ -43,7 +43,7 @@ while(True):
     print(requested_streets)
 
 
-channel.basic_publish(exchange='', routing_key='client-manager', body="__quit__")
+channel.basic_publish(exchange='', routing_key='client-manager', body="__end__")
 
 print("CLIENT: consuming from manager stopped")
 connection.close()

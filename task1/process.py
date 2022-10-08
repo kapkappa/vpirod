@@ -50,7 +50,7 @@ def callback(ch, method, properties, _body):
     print("PROCESS {}: message received from MANAGER".format(proc_number))
 
     letter = _body.decode("utf-8")
-    if (letter == "__quit__"):
+    if (letter == "__end__"):
         receive_channel.stop_consuming()
     else:
         for street in streets:
