@@ -11,19 +11,18 @@ channel.queue_declare(queue='client-manager')
 letter = input()
 
 channel.basic_publish(exchange='', routing_key='client-manager', body=letter)
-
-print("CLIENT: message sent to MANAGER")
+print("CLIENT: message {} sent to MANAGER".format(letter))
 
 
 
 #STEP 2: receive a message from the manager
 
 def callback(ch, method, properties, _body):
-    print("CLIENT: message recieved from MANAGER")
-    print(_body.decode("utf-8"))
+    print("CLIENT: message {} recieved from MANAGER".format(_body.decode("utf-8")))
 
 
-channel.basic_consume(queue='client-manager', on_message_callback=callback)
+channel.queue_declare(queue='manager-client')
+channel.basic_consume(queue='manager-client', on_message_callback=callback, auto_ack=True)
 channel.start_consuming()
 
 print("CLIENT: consuming stopped")

@@ -6,7 +6,8 @@ proc_number = sys.argv[1]
 
 #STEP 0: receive data from ETL process
 
-streets = ['xxxxxx', 'yyyyyy', 'zzzzzzzzz']
+streets = ['aaa', 'bbb', 'ccc', 'xxxxxx', 'yyyyyy', 'zzzzzzzzz']
+#streets = ['aaa']
 
 #step 1: receive message
 
@@ -24,9 +25,11 @@ def callback(ch, method, properties, _body):
     sending_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
     sending_channel = sending_connection.channel()
     sending_channel.queue_declare(queue='processes-manager')
-    sending_channel.basic_publish(exchange='', routing_key='processes-manager', body=streets[0])
 
-    print("PROCESS {}: message sent to MANAGER".format(proc_number))
+    for street in streets:
+        sending_channel.basic_publish(exchange='', routing_key='processes-manager', body=street)
+
+    print("PROCESS {}: messages sent to MANAGER".format(proc_number))
 
 
 

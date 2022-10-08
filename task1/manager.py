@@ -16,8 +16,7 @@ client_channel = client_connection.channel()
 client_channel.queue_declare(queue='client-manager')
 
 def callback_client(ch, method, properties, _body):
-    print("MANAGER: message received from CLIENT")
-    print(_body.decode("utf-8"))
+    print("MANAGER: message {} received from CLIENT".format(_body.decode("utf-8")))
     letter = _body.decode("utf-8")
     step2(letter.lower())
 
@@ -46,16 +45,14 @@ def step2(letter):
     process_channel.queue_declare(queue='processes-manager')
 
     def callback_process(ch, method, properties, __body):
-        print("MANAGER: message received from any process")
-        print(__body.decode("utf-8"))
+        print("MANAGER: message {} received from any process".format(__body.decode("utf-8")))
         step3(__body.decode("utf-8"))
 
 
 #STEP 4: send message back to client
     def step3(street):
-        print("MANAGER: message sent to CLIENT")
-        print(street)
-        client_channel.basic_publish(exchange='', routing_key='client-manager', body=street)
+        print("MANAGER: message {} sent to CLIENT".format(street))
+        client_channel.basic_publish(exchange='', routing_key='manager-client', body=street)
 
 
     process_channel.basic_consume(queue='processes-manager', on_message_callback=callback_process, auto_ack=True)
