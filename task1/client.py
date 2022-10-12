@@ -40,7 +40,10 @@ while(True):
     channel.basic_consume(queue='manager-client', on_message_callback=callback, auto_ack=True)
     channel.start_consuming()
 
-    print(requested_streets)
+    if (len(requested_streets)):
+        print(requested_streets)
+    else:
+        print("There are no streets for this letter")
 
 
 channel.basic_publish(exchange='', routing_key='client-manager', body="__end__")
