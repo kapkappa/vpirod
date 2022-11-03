@@ -25,7 +25,6 @@ exchange_channel.exchange_declare(exchange=id, exchange_type='direct')
 
 def receive_callback(ch, method, properties, body):
     print("message received")
-    time.sleep(10)
 
     list = body.decode('utf-8').split()
     key = list[0]
@@ -39,13 +38,14 @@ def receive_callback(ch, method, properties, body):
         #send new info
         destination = (int(id) + 1) % number_of_replicas
         if (destination > 0):
-            exchange_channel.basic_publish(exchange=id, routing_key=str((int(id)+1) % number_of_replicas), body=key + " " + value + " " + time)
+            exchange_channel.basic_publish(exchange=id, routing_key=str((int(id)+1) % number_of_replicas), body=key + " " + value + " " + str(time))
         #send confirmation to master replica
         exchange_channel.basic_publish(exchange=id, routing_key=0, body="comfirm")
 
 
-for i in range(number_of_replicas):
+for i in range(number_of_replicas+1):
     if (i != int(id)):
+        print("connecting with replica {}".format(i))
         receive_channel.exchange_declare(exchange=str(i), exchange_type='direct')
         result = receive_channel.queue_declare(queue='', exclusive=False)
         queue_name = result.method.queue
@@ -54,3 +54,6 @@ for i in range(number_of_replicas):
 
 
 receive_channel.start_consuming()
+
+print("END")
+time.sleep(10)
