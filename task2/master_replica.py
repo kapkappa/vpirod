@@ -6,7 +6,7 @@ print("master replica")
 
 dict = {'x' : "", 'y' : "", 'z' : ""}
 times = {'x' : 0, 'y' : 0, 'z' : 0}
-print("data: {}".format(dict))
+print("Data: {}\nTimestamps: {}".format(dict, times))
 
 id = 0
 number_of_replicas = int(sys.argv[1])
@@ -32,7 +32,7 @@ receive_channel.queue_declare(queue = '0')
 
 def callback_replicas(ch, method, properties, body):
     #confirmation from replica
-    print("receive info from replica")
+#    print("receive info from replica")
 
     global confirmations
     confirmations += 1
@@ -59,20 +59,20 @@ def callback_client(ch, method, properties, body):
     dict[key] = value
     times[key] += 1
 
-    print(dict)
-    print(times)
+    print("Data: {},\nTimestamps: {}".format(dict, times))
 
     #send info to replicas
-    print("send message to {} replica".format(1))
+#    print("send message to {} replica".format(1))
     destination = 1
     send_channel.queue_declare(queue = str(destination))
     send_channel.basic_publish(exchange='', routing_key=str(destination), body= key + " " + value + " " + str(times[key]))
 
     #get confirmations
-    print("waiting for responses")
+#    print("waiting for responses")
 
-    receive_channel.basic_consume(queue='0', on_message_callback=callback_replicas, auto_ack=True)
-    receive_channel.start_consuming()
+    if (number_of_replicas > 0):
+        receive_channel.basic_consume(queue='0', on_message_callback=callback_replicas, auto_ack=True)
+        receive_channel.start_consuming()
 
 
 
