@@ -6,11 +6,12 @@ print("master replica")
 
 dict = {'x' : "", 'y' : "", 'z' : ""}
 times = {'x' : 0, 'y' : 0, 'z' : 0}
-print(dict)
+print("data: {}".format(dict))
 
 id = 0
 number_of_replicas = int(sys.argv[1])
 
+confirmations = 0
 
 #sending connection
 send_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -29,26 +30,22 @@ receive_channel = receive_connection.channel()
 receive_channel.queue_declare(queue = '0')
 
 
-confirmations = 0
-
 def callback_replicas(ch, method, properties, body):
     #confirmation from replica
     print("receive info from replica")
-    time.sleep(5)
 
-    confirmations = confirmations + 1
+    global confirmations
+    confirmations += 1
 
-#    if confirmations == number_of_replicas:
-#        confirmations = 0
-#        print("all replicas updated")
-#        receive_channel.stop_consuming()
-
-    print("end of replica answer's processing")
-    time.sleep(5)
+    if confirmations == number_of_replicas:
+        confirmations = 0
+        print("all replicas updated!")
+        receive_channel.stop_consuming()
 
 
 def callback_client(ch, method, properties, body):
     print("get message from client")
+
     list = body.decode('utf-8').split()
     print(list)
 
@@ -65,7 +62,7 @@ def callback_client(ch, method, properties, body):
     print(dict)
     print(times)
 
-    #send info
+    #send info to replicas
     print("send message to {} replica".format(1))
     destination = 1
     send_channel.queue_declare(queue = str(destination))
