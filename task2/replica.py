@@ -11,10 +11,11 @@ dict = {'x' : "", 'y' : "", 'z' : ""}
 times = {'x' : 0, 'y' : 0, 'z' : 0}
 print("Data: {}\nTimestamps: {}".format(dict, times))
 
-k = 0
-if number_of_replicas > 1:
-    k = 2
-if number_of_replicas > 3:
+seq = list(range(0, number_of_replicas + 1))
+seq.remove(int(id))
+
+k = number_of_replicas / 3
+if k < 3:
     k = 3
 
 #receive from any replica
@@ -33,8 +34,14 @@ def receive_callback(ch, method, properties, body):
 
     list = body.decode('utf-8').split()
     key = list[0]
-    value = list[1]
-    time_stamp = int(list[2])
+
+    value = ""
+    for i in range(1, len(list)-1):
+        value += list[i]
+        value += " "
+    value = value[:-1]
+
+    time_stamp = int(list[len(list)-1])
 
     if times[key] < time_stamp:
         print("new value {}: {}, {}".format(key, value, time_stamp))
@@ -42,14 +49,11 @@ def receive_callback(ch, method, properties, body):
         dict[key] = value
         times[key] = time_stamp
 
-        #send new info
-        for i in range(k):
-            print(i)
-            destination = int(id)
-            while (destination == int(id)):
-                destination = random.randint(1, number_of_replicas)
-                print(destination)
+        print("Data: {}\nTimestamps: {}".format(dict, times))
 
+        #send new info
+        random_seq = random.sample(seq, k)
+        for destination in random_seq:
             print("destination: {}".format(destination))
 
             send_channel.queue_declare(queue = str(destination))
@@ -61,7 +65,13 @@ def receive_callback(ch, method, properties, body):
 
 
 receive_channel.basic_consume(queue=id, on_message_callback=receive_callback, auto_ack=True)
-receive_channel.start_consuming()
+try:
+    receive_channel.start_consuming()
+except KeyboardInterrupt:
+    print("Receive keyboard interruption!")
 
-print("END")
-time.sleep(10)
+receive_connection.close()
+send_connection.close()
+
+print("Bye!")
+time.sleep(5)

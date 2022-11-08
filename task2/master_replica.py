@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, time, pika
+import sys, time, pika, random
 
 print("master replica")
 
@@ -12,6 +12,12 @@ id = 0
 number_of_replicas = int(sys.argv[1])
 
 confirmations = 0
+
+seq = list(range(1, number_of_replicas+1))
+
+k = number_of_replicas / 3
+if k < 3:
+    k = 3
 
 #sending connection
 send_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -50,7 +56,11 @@ def callback_client(ch, method, properties, body):
     print(list)
 
     key = list[0]
-    value = list[1]
+    value = ""
+    for i in range(1, len(list)):
+        value += list[i]
+        value += " "
+    value = value[:-1]
 
     if key not in dict:
         print("Wrong key")
@@ -63,9 +73,12 @@ def callback_client(ch, method, properties, body):
 
     #send info to replicas
 #    print("send message to {} replica".format(1))
-    destination = 1
-    send_channel.queue_declare(queue = str(destination))
-    send_channel.basic_publish(exchange='', routing_key=str(destination), body= key + " " + value + " " + str(times[key]))
+#    destination = 1
+
+    random_seq = random.sample(seq, k)
+    for destination in random_seq:
+        send_channel.queue_declare(queue = str(destination))
+        send_channel.basic_publish(exchange='', routing_key=str(destination), body= key + " " + value + " " + str(times[key]))
 
     #get confirmations
 #    print("waiting for responses")
@@ -77,7 +90,14 @@ def callback_client(ch, method, properties, body):
 
 
 client_channel.basic_consume(queue='client-master', on_message_callback=callback_client, auto_ack=True)
-client_channel.start_consuming()
+try:
+    client_channel.start_consuming()
+except KeyboardInterrupt:
+    print("Receive keyboard interruption!")
 
-print("END")
-time.sleep(10)
+send_connection.close()
+receive_connection.close()
+client_connection.close()
+
+print("Bye!")
+time.sleep(5)
