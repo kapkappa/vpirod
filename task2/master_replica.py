@@ -17,7 +17,7 @@ seq = list(range(1, number_of_replicas+1))
 
 k = number_of_replicas / 3
 if k < 3:
-    k = 3
+    k = number_of_replicas
 
 #sending connection
 send_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -35,6 +35,8 @@ receive_connection = pika.BlockingConnection(pika.ConnectionParameters(host='loc
 receive_channel = receive_connection.channel()
 receive_channel.queue_declare(queue = '0')
 
+
+#random_seq = random.sample(seq, k)
 
 def callback_replicas(ch, method, properties, body):
     #confirmation from replica
@@ -75,13 +77,22 @@ def callback_client(ch, method, properties, body):
 #    print("send message to {} replica".format(1))
 #    destination = 1
 
+#    time.sleep(5)
+
     random_seq = random.sample(seq, k)
+
+#    print("random")
+#    time.sleep(5)
+
     for destination in random_seq:
         send_channel.queue_declare(queue = str(destination))
         send_channel.basic_publish(exchange='', routing_key=str(destination), body= key + " " + value + " " + str(times[key]))
 
+
+
     #get confirmations
 #    print("waiting for responses")
+#    time.sleep(5)
 
     if (number_of_replicas > 0):
         receive_channel.basic_consume(queue='0', on_message_callback=callback_replicas, auto_ack=True)

@@ -16,7 +16,7 @@ seq.remove(int(id))
 
 k = number_of_replicas / 3
 if k < 3:
-    k = 3
+    k = number_of_replicas
 
 #receive from any replica
 receive_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
