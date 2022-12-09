@@ -5,6 +5,8 @@ import pika
 
 rank = sys.argv[1]
 
+number_of_shufflers = int(sys.argv[2])
+
 receive_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 receive_channel = receive_connection.channel()
 receive_channel.exchange_declare(exchange='reducers', exchange_type='direct')
@@ -19,6 +21,8 @@ sending_channel.queue_declare(queue='reducers_to_master')
 
 dict = {}
 
+count = 0
+
 def to_master():
     for key in dict.keys():
         message = key + " " + str(dict[key])
@@ -28,11 +32,16 @@ def to_master():
 
 
 def callback(ch, method, properties, body):
+    global count
     message = body.decode('utf-8').split()
     key = message[0]
     if (key == "__quit__"):
-        to_master()
-        receive_channel.stop_consuming()
+        count += 1
+        if (count == number_of_shufflers):
+            to_master()
+            receive_channel.stop_consuming()
+            return
+
         return
 
     value = 0

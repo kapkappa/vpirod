@@ -41,7 +41,7 @@ for i in range(int(mapping_nodes)):
 
 for i in range(int(convolution_nodes)):
     print("starting reducer №{}".format(i))
-    subprocess.Popen(["python3", "R"+str(i)+"/reducer.py", str(i)], stdin=None, stdout=None, stderr=None, close_fds=True)
+    subprocess.Popen(["python3", "R"+str(i)+"/reducer.py", str(i), mapping_nodes], stdin=None, stdout=None, stderr=None, close_fds=True)
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()

@@ -30,7 +30,9 @@ def to_reduce():
         for i in dict[key]:
             message = message + " " + i
         exchange_channel.basic_publish(exchange='reducers', routing_key=str(alphabet[message[0]]), body=message)
-    exchange_channel.basic_publish(exchange='reducers', routing_key=str(alphabet[message[0]]), body="__quit__")
+
+    for i in range(int(number_of_reducers)):
+        exchange_channel.basic_publish(exchange='reducers', routing_key=str(i), body="__quit__")
 
 
 

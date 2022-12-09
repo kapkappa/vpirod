@@ -2,22 +2,24 @@
 
 import os, sys
 
+file = sys.argv[1]
+
 divide = 10
 
 count = 0
 
-f0 = open("f0", "w+")
-f1 = open("f1", "w+")
-f2 = open("f2", "w+")
-f3 = open("f3", "w+")
-f4 = open("f4", "w+")
-f5 = open("f5", "w+")
-f6 = open("f6", "w+")
-f7 = open("f7", "w+")
-f8 = open("f8", "w+")
-f9 = open("f9", "w+")
+f0 = open("f0.txt", "w+")
+f1 = open("f1.txt", "w+")
+f2 = open("f2.txt", "w+")
+f3 = open("f3.txt", "w+")
+f4 = open("f4.txt", "w+")
+f5 = open("f5.txt", "w+")
+f6 = open("f6.txt", "w+")
+f7 = open("f7.txt", "w+")
+f8 = open("f8.txt", "w+")
+f9 = open("f9.txt", "w+")
 
-with open("bible.txt", "r") as f:
+with open(file, "r") as f:
     for line in f:
         if (count == 0):
             f0.write(line)
