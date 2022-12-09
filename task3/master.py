@@ -50,15 +50,15 @@ channel.queue_declare(queue='reducers_to_master')
 def callback(ch, method, properties, body):
     message = body.decode('utf-8')
     if (message == "__quit__"):
-        channel.stop_comsuming()
+        channel.stop_consuming()
         return
 
     print(message)
 
 
-client_channel.basic_consume(queue='reducers_to_master', on_message_callback=callback_client, auto_ack=True)
-client_channel.start_consuming()
-
+channel.basic_consume(queue='reducers_to_master', on_message_callback=callback, auto_ack=True)
+channel.start_consuming()
+channel.close()
 print("END")
 
 for i in range(int(mapping_nodes)):

@@ -21,11 +21,13 @@ dict = {}
 
 def to_master():
     for key in dict.keys():
-        message = key + " " + dict[key]
-        sending_channel.basic_publish(exchange='', routing_key='reducer_to_manager', body=message)
+        message = key + " " + str(dict[key])
+        sending_channel.basic_publish(exchange='', routing_key='reducers_to_master', body=message)
+    sending_channel.basic_publish(exchange='', routing_key='reducers_to_master', body="__quit__")
 
 
-def callback(ch, method, properties, body)
+
+def callback(ch, method, properties, body):
     message = body.decode('utf-8').split()
     key = message[0]
     if (key == "__quit__"):
@@ -34,7 +36,7 @@ def callback(ch, method, properties, body)
         return
 
     value = 0
-    for i in range(1, len(message):
+    for i in range(1, len(message)):
         value += int(message[i])
     dict[key] = value
 
@@ -43,3 +45,5 @@ def callback(ch, method, properties, body)
 receive_channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
 receive_channel.start_consuming()
 receive_channel.close()
+
+print("reducer: END")

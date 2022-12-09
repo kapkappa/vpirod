@@ -8,7 +8,7 @@ rank = sys.argv[1]
 number_of_reducers = sys.argv[2]
 
 receive_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-receive_channel = connection.channel()
+receive_channel = receive_connection.channel()
 
 receive_queue_name = "mapper_to_shuffler"+rank
 receive_channel.queue_declare(queue=receive_queue_name)
@@ -24,7 +24,7 @@ dict = {}
 def to_reduce():
     for key in dict.keys():
         message = key
-        if(message[0] not in alphabet.keys()):
+        if (message[0] not in alphabet.keys()):
             continue
 
         for i in dict[key]:
@@ -50,3 +50,5 @@ def callback(ch, method, properties, body):
 receive_channel.basic_consume(queue=receive_queue_name, on_message_callback=callback, auto_ack=True)
 receive_channel.start_consuming()
 receive_channel.close()
+
+print("shuffler: END")
