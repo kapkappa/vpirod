@@ -14,13 +14,13 @@ channel.queue_declare(queue=queue_name)
 for root, dirs, files in os.walk("M"+rank):
     for file in files:
         if ("txt" in file):
-            print(file)
+#            print(file)
             with open("M"+rank+"/"+file, "r") as f:
                 for line in f:
                     line = re.sub(r'[^\w\s]','', line)
                     channel.basic_publish(exchange='', routing_key=queue_name, body=line.lower())
             f.close()
 
-print("splitter: END")
+#print("splitter: END")
 channel.basic_publish(exchange='', routing_key=queue_name, body="__quit__")
 

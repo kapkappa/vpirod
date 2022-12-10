@@ -13,9 +13,8 @@ receive_channel = receive_connection.channel()
 receive_queue_name = "mapper_to_shuffler"+rank
 receive_channel.queue_declare(queue=receive_queue_name)
 
-exchange_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-exchange_channel = exchange_connection.channel()
-exchange_channel.exchange_declare(exchange='reducers', exchange_type='direct')
+send_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+send_channel = send_connection.channel()
 
 alphabet = {l: (i % int(number_of_reducers)) for i, l in enumerate("abcdefghijklmnopqrstuvwxyz")} # d = {'а': 0, ... }
 dict = {}
@@ -29,10 +28,14 @@ def to_reduce():
 
         for i in dict[key]:
             message = message + " " + i
-        exchange_channel.basic_publish(exchange='reducers', routing_key=str(alphabet[message[0]]), body=message)
+
+        destination = str(alphabet[message[0]])
+        send_channel.queue_declare(queue = destination)
+        send_channel.basic_publish(exchange='', routing_key=destination, body=message)
 
     for i in range(int(number_of_reducers)):
-        exchange_channel.basic_publish(exchange='reducers', routing_key=str(i), body="__quit__")
+        send_channel.queue_declare(queue = str(i))
+        send_channel.basic_publish(exchange='', routing_key=str(i), body="__quit__")
 
 
 
@@ -53,4 +56,4 @@ receive_channel.basic_consume(queue=receive_queue_name, on_message_callback=call
 receive_channel.start_consuming()
 receive_channel.close()
 
-print("shuffler: END")
+#print("shuffler: END")

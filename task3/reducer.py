@@ -9,10 +9,7 @@ number_of_shufflers = int(sys.argv[2])
 
 receive_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 receive_channel = receive_connection.channel()
-receive_channel.exchange_declare(exchange='reducers', exchange_type='direct')
-result = receive_channel.queue_declare(queue='', exclusive=False)
-queue_name = result.method.queue
-receive_channel.queue_bind(exchange='reducers', queue=queue_name, routing_key=rank)
+receive_channel.queue_declare(queue=rank, exclusive=False)
 
 sending_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 sending_channel = sending_connection.channel()
@@ -47,12 +44,16 @@ def callback(ch, method, properties, body):
     value = 0
     for i in range(1, len(message)):
         value += int(message[i])
-    dict[key] = value
+
+    if (key not in dict.keys()):
+        dict[key] = 0
+
+    dict[key] += value
 
 
 
-receive_channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+receive_channel.basic_consume(queue=rank, on_message_callback=callback, auto_ack=True)
 receive_channel.start_consuming()
 receive_channel.close()
 
-print("reducer: END")
+#print("reducer: END")

@@ -33,4 +33,4 @@ receive_channel.basic_consume(queue=receive_queue_name, on_message_callback=call
 receive_channel.start_consuming()
 receive_channel.close()
 
-print("mapper: END")
+#print("mapper: END")

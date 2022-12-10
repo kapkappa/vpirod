@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 import pika
 import os, shutil
 import subprocess, sys
@@ -47,18 +48,34 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost')
 channel = connection.channel()
 channel.queue_declare(queue='reducers_to_master')
 
+
+result = []
+
+count = 0
+
 def callback(ch, method, properties, body):
+    global count
     message = body.decode('utf-8')
     if (message == "__quit__"):
-        channel.stop_consuming()
+        count += 1
+        if (count == int(convolution_nodes)):
+            channel.stop_consuming()
+            return
         return
 
-    print(message)
+    result.append(message)
 
 
 channel.basic_consume(queue='reducers_to_master', on_message_callback=callback, auto_ack=True)
 channel.start_consuming()
 channel.close()
+
+result.sort()
+for w in result:
+    print(w)
+
+time.sleep(2)
+
 print("END")
 
 for i in range(int(mapping_nodes)):
