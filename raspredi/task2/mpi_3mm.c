@@ -147,6 +147,12 @@ int main(int argc, char **argv) {
       D_displs[world_size], G_displs[world_size];
   int G_recvcounts[world_size];
 
+
+  if (rank == (world_size - 1)) {
+    printf("process %d has been killed", rank);
+    raise(SIGKILL);
+  }
+
 checkpoint:
 
   // Master process contains extra rows of matrices, because elements cant be
@@ -230,11 +236,6 @@ checkpoint:
   G = (float *)calloc(ni * nl, sizeof(float));
   G_local = (float *)calloc(A_rows * nl, sizeof(float));
 
-  if (rank == (world_size - 1)) {
-    printf("process %d has been killed", rank);
-    raise(SIGKILL);
-  }
-
   MPI_Barrier(main_comm);
   bench_timer_start();
 
@@ -252,8 +253,7 @@ checkpoint:
   MPI_Allgatherv(G_local, A_rows * nl, MPI_FLOAT, G, G_recvcounts, G_displs,
                    MPI_FLOAT, main_comm);
 
-  MPI_Barrier(main_comm);
-  bench_timer_stop();
+  MPI_Barrier(main_comm); bench_timer_stop();
 
   bench_timer_print();
   printf("Result matrix trace: %lf\n", calculate_matrix_trace(ni, nl, G));
