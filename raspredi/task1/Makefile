@@ -3,7 +3,6 @@ MPICXX = mpicxx
 #CC = xlc
 
 CXXFLAGS = -std=c++2a
-XLCFLAGS = -qsmp=omp
 
 BUILD ?= Debug
 
