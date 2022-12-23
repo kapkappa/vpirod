@@ -5,7 +5,7 @@
 double bench_t_start, bench_t_end;
 const int niters = NITERS;
 int A_rows, B_rows, C_rows, D_rows, E_rows, F_rows;
-int broken_rank, rank, world_size;
+int new_rank, rank, world_size;
 unsigned error_occured = 0;
 MPI_Comm main_comm;
 
@@ -163,12 +163,26 @@ static void kernel_3mm(int ni, int nj, int nk, int nl, int nm, float *E,
   }
 }
 
+
+
+
 static void print_array(int size, int *array) {
   int i;
   for (i = 0; i < size; i++)
     printf("%d ", array[i]);
   printf("\n");
 }
+
+
+
+
+
+
+////////////////////////////
+
+
+
+
 
 
 static void errhandler(MPI_Comm* pcomm, int* perr, ...);
@@ -178,15 +192,12 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    main_comm = MPI_COMM_WORLD;
+  main_comm = MPI_COMM_WORLD;
 
-    MPI_Errhandler errh;
-    MPI_Comm_create_errhandler(errhandler, &errh);
-    MPI_Comm_set_errhandler(main_comm, errh);
-    MPI_Barrier(main_comm);
-    MPI_Barrier(main_comm);
-
-
+  MPI_Errhandler errh;
+  MPI_Comm_create_errhandler(errhandler, &errh);
+  MPI_Comm_set_errhandler(main_comm, errh);
+  MPI_Barrier(main_comm);
 
   int i, k, l;
   int ni = NI;
@@ -211,15 +222,29 @@ int main(int argc, char **argv) {
     init_array(ni, nj, nk, nl, nm, A, B, C, D);
   }
 
+
+  int A_block_rows, A_extra_rows;
+  int B_block_rows, B_extra_rows;
+  int C_block_rows, C_extra_rows;
+  int D_block_rows, D_extra_rows;
+
+  // Prepare arrays for MPI_Scatterv operation
+  int A_sendcounts[world_size], B_sendcounts[world_size],
+      C_sendcounts[world_size], D_sendcounts[world_size],
+      F_sendcounts[world_size];
+  int A_displs[world_size], B_displs[world_size], C_displs[world_size],
+      D_displs[world_size], G_displs[world_size];
+  int G_recvcounts[world_size];
+
 checkpoint:
 
   // Master process contains extra rows of matrices, because elements cant be
   // divided across processes equally So here we calculate number of rows for
   // each process
-  int A_block_rows = ni / world_size, A_extra_rows = ni % world_size;
-  int B_block_rows = nk / world_size, B_extra_rows = nk % world_size;
-  int C_block_rows = nj / world_size, C_extra_rows = nj % world_size;
-  int D_block_rows = nm / world_size, D_extra_rows = nm % world_size;
+  A_block_rows = ni / world_size, A_extra_rows = ni % world_size;
+  B_block_rows = nk / world_size, B_extra_rows = nk % world_size;
+  C_block_rows = nj / world_size, C_extra_rows = nj % world_size;
+  D_block_rows = nm / world_size, D_extra_rows = nm % world_size;
   A_rows = A_block_rows;
   B_rows = B_block_rows;
   C_rows = C_block_rows;
@@ -239,11 +264,7 @@ checkpoint:
 
   // Create arrays on each slave process for their part of source matrices
   // On master process, only copying the pointer
-  if (rank == 0) {
-    A_local = A;
-    B_to_recv = B;
-    C_local = C;
-    D_to_recv = D;
+  if (rank == 0) { A_local = A; B_to_recv = B; C_local = C; D_to_recv = D;
   } else {
     A_local = (float *)malloc(A_rows * nk * sizeof(float));
     C_local = (float *)malloc(C_rows * nm * sizeof(float));
@@ -253,13 +274,6 @@ checkpoint:
         (float *)malloc((D_block_rows + D_extra_rows) * nl * sizeof(float));
   }
 
-  // Prepare arrays for MPI_Scatterv operation
-  int A_sendcounts[world_size], B_sendcounts[world_size],
-      C_sendcounts[world_size], D_sendcounts[world_size],
-      F_sendcounts[world_size];
-  int A_displs[world_size], B_displs[world_size], C_displs[world_size],
-      D_displs[world_size], G_displs[world_size];
-  int G_recvcounts[world_size];
   // Fill these arrays
   for (i = 0; i < world_size; i++) {
     A_sendcounts[i] = A_block_rows * nk;
@@ -312,10 +326,12 @@ checkpoint:
                B_sendcounts, F_to_recv, F_to_send, F_sendcounts, C_local,
                D_to_recv, D_to_send, D_sendcounts, G_local);
 
-    if (error_occured == 1) {
-        error_occured = 0;
-        goto checkpoint;
-    }
+  MPI_Barrier(main_comm);
+
+  if (error_occured == 1) {
+    error_occured = 0;
+    goto checkpoint;
+  }
 
   MPI_Allgatherv(G_local, A_rows * nl, MPI_FLOAT, G, G_recvcounts, G_displs,
                    MPI_FLOAT, main_comm);
@@ -346,9 +362,6 @@ checkpoint:
 
 
 static void errhandler(MPI_Comm* pcomm, int* perr, ...) {
-    if (rank == 0){
-        printf("\nERROR!!\n");
-    }
     printf("Proc №%d in errhandler\n", rank);
 
     error_occured = 1;
@@ -358,7 +371,6 @@ static void errhandler(MPI_Comm* pcomm, int* perr, ...) {
     MPI_Group group_f;
 
 //     Получаем количество отказавших процессов, тип ошибки
-
     MPI_Comm_size(main_comm, &size);
     MPIX_Comm_failure_ack(main_comm);
     MPIX_Comm_failure_get_acked(main_comm, &group_f);
@@ -368,15 +380,6 @@ static void errhandler(MPI_Comm* pcomm, int* perr, ...) {
 //     Cоздаем новый коммуникатор без вышедшего из строя процесса
 
     MPIX_Comm_shrink(main_comm, &main_comm);
-    MPI_Comm_rank(main_comm, &broken_rank);
-    if (rank == 0){
-        printf("Rank %d / %d: Notified of error %s. %d found dead\n", broken_rank, size, errstr, nf);
-    }
-    if (rank == 0){
-        printf("There was %d processes\n", world_size);
-    }
+    MPI_Comm_rank(main_comm, &new_rank);
     MPI_Comm_size(main_comm, &world_size);
-    if (rank == 0){
-        printf("Now %d processes still working \n\n\n", world_size);
-    }
 }

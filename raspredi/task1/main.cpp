@@ -1,6 +1,7 @@
 #include <iostream>
 #include <queue>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <mpi.h>
@@ -31,7 +32,7 @@ struct tree {
     } else {
       fopen("critical.txt", "w");
       std::cout << "CRITICAL; rank: " << rank << std::endl;
-      sleep(3);
+      sleep(rand() % 10);
       remove("critical.txt");
     }
   }
@@ -169,8 +170,6 @@ int main(int argc, char **argv) {
 
   tree_elem.print();
 
-  int previous_marker = marker_node;
-
   for (int request_sender = 0; request_sender < world_size; request_sender++) {
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -222,7 +221,6 @@ int main(int argc, char **argv) {
         }
       }
     }
-    previous_marker = request_sender;
 
     MPI_Barrier(MPI_COMM_WORLD);
   }
