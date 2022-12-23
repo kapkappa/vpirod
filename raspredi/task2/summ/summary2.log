@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.4.7)  23 DEC 2022 16:27
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.4.7)  23 DEC 2022 18:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -988,23 +988,23 @@ LaTeX Font Info:    T2A-m encoding encountered on input line 62.
  [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    T2A-m encoding encountered on input line 152.
-LaTeX Font Info:    T2A-bx encoding encountered on input line 152.
+LaTeX Font Info:    T2A-m encoding encountered on input line 161.
+LaTeX Font Info:    T2A-bx encoding encountered on input line 161.
  [2] [3]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 155.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 155.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 164.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 164.
  (./summary2.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 155.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 155.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 164.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 164.
 Package rerunfilecheck Info: File `summary2.out' has not changed.
 (rerunfilecheck)             Checksum: 043E291C346E5A82A261622BD16E4AC6;358.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 155.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 164.
  ) 
 Here is how much of TeX's memory you used:
- 31755 strings out of 482616
- 713889 string characters out of 5956824
- 1438985 words of memory out of 5000000
- 46202 multiletter control sequences out of 15000+600000
+ 31766 strings out of 482616
+ 714024 string characters out of 5956824
+ 1454985 words of memory out of 5000000
+ 46208 multiletter control sequences out of 15000+600000
  542172 words of font info for 38 fonts, out of 8000000 for 9000
  452 hyphenation exceptions out of 8191
  68i,5n,98p,1062b,1384s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1019,10 +1019,10 @@ abx1200.600pk> </home/kapkappa/.texlive2019/texmf-var/fonts/pk/ljfour/lh/lh-t2a
 2a/labx1728.600pk> </home/kapkappa/.texlive2019/texmf-var/fonts/pk/ljfour/lh/lh
 -t2a/larm1440.600pk> </home/kapkappa/.texlive2019/texmf-var/fonts/pk/ljfour/lh/
 lh-t2a/labx2074.600pk>
-Output written on summary2.pdf (3 pages, 87702 bytes).
+Output written on summary2.pdf (3 pages, 89181 bytes).
 PDF statistics:
- 404 PDF objects out of 1000 (max. 8388607)
- 150 compressed objects within 2 object streams
- 73 named destinations out of 1000 (max. 500000)
+ 412 PDF objects out of 1000 (max. 8388607)
+ 155 compressed objects within 2 object streams
+ 78 named destinations out of 1000 (max. 500000)
  37 words of extra memory for PDF output out of 10000 (max. 10000000)
 

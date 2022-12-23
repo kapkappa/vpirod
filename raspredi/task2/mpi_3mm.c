@@ -1,4 +1,5 @@
 #include "3mm.h"
+#include <signal.h>
 #include <mpi.h>
 #include <mpi-ext.h>
 
@@ -66,102 +67,6 @@ static double calculate_matrix_trace(int ni, int nl, float *G) {
   return trace;
 }
 
-static void kernel_3mm(int ni, int nj, int nk, int nl, int nm, float *E,
-                       float *A, float *B_recv, float *B_send,
-                       int *B_sendcounts, float *F_recv, float *F_send,
-                       int *F_sendcounts, float *C, float *D_recv,
-                       float *D_send, int *D_sendcounts, float *G) {
-  int i, j, k, iter;
-
-  int B_row_displs = 0;
-  for (i = 0; i <= rank; i++)
-    B_row_displs += nk / world_size;
-  if (B_row_displs != 0)
-    B_row_displs += nk % world_size;
-
-  for (iter = 0; iter < world_size; iter++) {
-    if (rank != iter)
-      B_rows = nk / world_size;
-    else
-      B_rows = nk / world_size + (nk % world_size);
-
-    B_row_displs = (B_row_displs - B_rows + nk) % nk;
-
-    for (i = 0; i < A_rows; i++)
-      for (j = 0; j < nj; j++) {
-        for (k = 0; k < B_rows; ++k)
-          E[i * nj + j] += A[i * nk + B_row_displs + k] * B_recv[k * nj + j];
-      }
-    float *tmp = B_recv;
-    B_recv = B_send;
-    B_send = tmp;
-
-    MPI_Sendrecv(B_send, B_sendcounts[(world_size + rank - iter) % world_size],
-                 MPI_FLOAT, (rank + 1) % world_size, 0, B_recv,
-                 B_sendcounts[(world_size + rank - iter - 1) % world_size],
-                 MPI_FLOAT, (world_size + rank - 1) % world_size, 0,
-                 main_comm, MPI_STATUS_IGNORE);
-  }
-
-  int D_row_displs = 0;
-  for (i = 0; i <= rank; i++)
-    D_row_displs += nm / world_size;
-  if (D_row_displs != 0)
-    D_row_displs += nm % world_size;
-
-  for (iter = 0; iter < world_size; iter++) {
-    if (rank != iter)
-      D_rows = nm / world_size;
-    else
-      D_rows = nm / world_size + (nm % world_size);
-
-    D_row_displs = (D_row_displs - D_rows + nm) % nm;
-
-    for (i = 0; i < C_rows; i++)
-      for (j = 0; j < nl; j++) {
-        for (k = 0; k < D_rows; ++k)
-          F_recv[i * nl + j] +=
-              C[i * nm + D_row_displs + k] * D_recv[k * nl + j];
-      }
-    float *tmp = D_recv;
-    D_recv = D_send;
-    D_send = tmp;
-    MPI_Sendrecv(D_send, D_sendcounts[(world_size + rank - iter) % world_size],
-                 MPI_FLOAT, (rank + 1) % world_size, 1, D_recv,
-                 D_sendcounts[(world_size + rank - iter - 1) % world_size],
-                 MPI_FLOAT, (world_size + rank - 1) % world_size, 1,
-                 main_comm, MPI_STATUS_IGNORE);
-  }
-
-  int F_row_displs = 0;
-  for (i = 0; i <= rank; i++)
-    F_row_displs += nj / world_size;
-  if (F_row_displs != 0)
-    F_row_displs += nj % world_size;
-
-  for (iter = 0; iter < world_size; iter++) {
-    if (rank != iter)
-      F_rows = nj / world_size;
-    else
-      F_rows = nj / world_size + (nj % world_size);
-
-    F_row_displs = (F_row_displs - F_rows + nj) % nj;
-
-    for (i = 0; i < A_rows; i++)
-      for (j = 0; j < nl; j++) {
-        for (k = 0; k < F_rows; ++k)
-          G[i * nl + j] += E[i * nj + F_row_displs + k] * F_recv[k * nl + j];
-      }
-    float *tmp = F_recv;
-    F_recv = F_send;
-    F_send = tmp;
-    MPI_Sendrecv(F_send, F_sendcounts[(world_size + rank - iter) % world_size],
-                 MPI_FLOAT, (rank + 1) % world_size, 2, F_recv,
-                 F_sendcounts[(world_size + rank - iter - 1) % world_size],
-                 MPI_FLOAT, (world_size + rank - 1) % world_size, 2,
-                 main_comm, MPI_STATUS_IGNORE);
-  }
-}
 
 
 
@@ -175,17 +80,23 @@ static void print_array(int size, int *array) {
 
 
 
+////////////////////////////
+
+
+
+static void kernel_3mm(int ni, int nj, int nk, int nl, int nm, float *E,
+                       float *A, float *B_recv, float *B_send,
+                       int *B_sendcounts, float *F_recv, float *F_send,
+                       int *F_sendcounts, float *C, float *D_recv,
+                       float *D_send, int *D_sendcounts, float *G);
+
+static void errhandler(MPI_Comm* pcomm, int* perr, ...);
 
 
 
 ////////////////////////////
 
 
-
-
-
-
-static void errhandler(MPI_Comm* pcomm, int* perr, ...);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -319,6 +230,11 @@ checkpoint:
   G = (float *)calloc(ni * nl, sizeof(float));
   G_local = (float *)calloc(A_rows * nl, sizeof(float));
 
+  if (rank == (world_size - 1)) {
+    printf("process %d has been killed", rank);
+    raise(SIGKILL);
+  }
+
   MPI_Barrier(main_comm);
   bench_timer_start();
 
@@ -361,6 +277,14 @@ checkpoint:
 
 
 
+
+////////////////////////
+
+
+
+
+
+
 static void errhandler(MPI_Comm* pcomm, int* perr, ...) {
     printf("Proc №%d in errhandler\n", rank);
 
@@ -370,16 +294,126 @@ static void errhandler(MPI_Comm* pcomm, int* perr, ...) {
     int size, nf, len;
     MPI_Group group_f;
 
-//     Получаем количество отказавших процессов, тип ошибки
     MPI_Comm_size(main_comm, &size);
     MPIX_Comm_failure_ack(main_comm);
     MPIX_Comm_failure_get_acked(main_comm, &group_f);
     MPI_Group_size(group_f, &nf);
     MPI_Error_string(err, errstr, &len);
 
-//     Cоздаем новый коммуникатор без вышедшего из строя процесса
 
     MPIX_Comm_shrink(main_comm, &main_comm);
     MPI_Comm_rank(main_comm, &new_rank);
     MPI_Comm_size(main_comm, &world_size);
+}
+
+
+
+
+
+static void kernel_3mm(int ni, int nj, int nk, int nl, int nm, float *E,
+                       float *A, float *B_recv, float *B_send,
+                       int *B_sendcounts, float *F_recv, float *F_send,
+                       int *F_sendcounts, float *C, float *D_recv,
+                       float *D_send, int *D_sendcounts, float *G) {
+  int i, j, k, iter;
+
+  int B_row_displs = 0;
+  for (i = 0; i <= rank; i++)
+    B_row_displs += nk / world_size;
+  if (B_row_displs != 0)
+    B_row_displs += nk % world_size;
+
+  for (iter = 0; iter < world_size; iter++) {
+    if (rank != iter)
+      B_rows = nk / world_size;
+    else
+      B_rows = nk / world_size + (nk % world_size);
+
+    B_row_displs = (B_row_displs - B_rows + nk) % nk;
+
+    for (i = 0; i < A_rows; i++)
+      for (j = 0; j < nj; j++) {
+        for (k = 0; k < B_rows; ++k)
+          E[i * nj + j] += A[i * nk + B_row_displs + k] * B_recv[k * nj + j];
+      }
+    float *tmp = B_recv;
+    B_recv = B_send;
+    B_send = tmp;
+
+    if (error_occured == 1) {
+      error_occured = 0;
+      goto checkpoint;
+    }
+
+    MPI_Sendrecv(B_send, B_sendcounts[(world_size + rank - iter) % world_size],
+                 MPI_FLOAT, (rank + 1) % world_size, 0, B_recv,
+                 B_sendcounts[(world_size + rank - iter - 1) % world_size],
+                 MPI_FLOAT, (world_size + rank - 1) % world_size, 0,
+                 main_comm, MPI_STATUS_IGNORE);
+  }
+
+  int D_row_displs = 0;
+  for (i = 0; i <= rank; i++)
+    D_row_displs += nm / world_size;
+  if (D_row_displs != 0)
+    D_row_displs += nm % world_size;
+
+  for (iter = 0; iter < world_size; iter++) {
+    if (rank != iter)
+      D_rows = nm / world_size;
+    else
+      D_rows = nm / world_size + (nm % world_size);
+
+    D_row_displs = (D_row_displs - D_rows + nm) % nm;
+
+    for (i = 0; i < C_rows; i++)
+      for (j = 0; j < nl; j++) {
+        for (k = 0; k < D_rows; ++k)
+          F_recv[i * nl + j] +=
+              C[i * nm + D_row_displs + k] * D_recv[k * nl + j];
+      }
+    float *tmp = D_recv;
+    D_recv = D_send;
+    D_send = tmp;
+
+    if (error_occured == 1) {
+      error_occured = 0;
+      goto checkpoint;
+    }
+
+    MPI_Sendrecv(D_send, D_sendcounts[(world_size + rank - iter) % world_size],
+                 MPI_FLOAT, (rank + 1) % world_size, 1, D_recv,
+                 D_sendcounts[(world_size + rank - iter - 1) % world_size],
+                 MPI_FLOAT, (world_size + rank - 1) % world_size, 1,
+                 main_comm, MPI_STATUS_IGNORE);
+  }
+
+  int F_row_displs = 0;
+  for (i = 0; i <= rank; i++)
+    F_row_displs += nj / world_size;
+  if (F_row_displs != 0)
+    F_row_displs += nj % world_size;
+
+  for (iter = 0; iter < world_size; iter++) {
+    if (rank != iter)
+      F_rows = nj / world_size;
+    else
+      F_rows = nj / world_size + (nj % world_size);
+
+    F_row_displs = (F_row_displs - F_rows + nj) % nj;
+
+    for (i = 0; i < A_rows; i++)
+      for (j = 0; j < nl; j++) {
+        for (k = 0; k < F_rows; ++k)
+          G[i * nl + j] += E[i * nj + F_row_displs + k] * F_recv[k * nl + j];
+      }
+    float *tmp = F_recv;
+    F_recv = F_send;
+    F_send = tmp;
+    MPI_Sendrecv(F_send, F_sendcounts[(world_size + rank - iter) % world_size],
+                 MPI_FLOAT, (rank + 1) % world_size, 2, F_recv,
+                 F_sendcounts[(world_size + rank - iter - 1) % world_size],
+                 MPI_FLOAT, (world_size + rank - 1) % world_size, 2,
+                 main_comm, MPI_STATUS_IGNORE);
+  }
 }
